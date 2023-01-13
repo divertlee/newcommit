@@ -9,7 +9,7 @@ int main()
 	string str[32];
 	for (int i = 0; i < 32; i++)
 	{
-		str[32 - 1 - i] = (char)((a >> 1) & 1 + '0');
+		str[32 - 1 - i] = (char)(((a >> i) & 1) + '0');
 
 	}
 	int sum = 0;
@@ -20,10 +20,10 @@ int main()
 		if (str[cur] == "1")
 		{
 			prev++;
+			sum = sum > prev ? sum : prev;
 		}
 		else
 		{
-			sum = sum > prev ? sum : prev;
 			prev = 0;
 		}
 }
