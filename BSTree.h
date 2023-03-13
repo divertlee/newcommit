@@ -81,44 +81,6 @@ public:
 	{
 		node* parent = nullptr;
 		node* cur = _root;
-		if (_root == nullptr)
-		{
-			return false;
-		}
-		if (_root->_key == key)//删除根节点时
-		{
-			//左右空
-			if (cur->_left == nullptr && cur->_right == nullptr)
-			{
-				_root = nullptr;
-				return true;
-			}
-			//左空
-			else if (cur->_left == nullptr)
-			{
-				_root =_root->_right;
-				return true;
-			}
-			//右空
-			else if (cur->_right == nullptr)
-			{
-				_root = _root->_left;
-				return true;
-			}
-			//左右都不空
-			else
-			{
-				node* right = cur->_right;
-				while (right->_left)
-				{
-					right = right->_left;
-				}
-				right->_left = cur->_left;
-				_root = right;
-				return true;
-			}
-		}
-		
 		while (cur)
 		{
 			if (key > cur->_key)
@@ -131,83 +93,207 @@ public:
 				parent = cur;
 				cur = cur->_left;
 			}
-			else//找到了
-			{//左右节点都为空
-				if (cur->_left == nullptr && cur->_right == nullptr)
-				{
-					if (parent->_left == cur)
-					{
-						delete cur;
-						parent->_left = nullptr;
-						return true;
-					}
-					else
-					{
-						delete cur;
-						parent->_right = nullptr;
-						return true;
-					}
-				}
-
-				//左节点为空
-				else if (cur->_left == nullptr)
-				{
-					if (parent->_left == cur)
-					{
-						parent->_left = cur->_right;
-						delete cur;
-						return true;
-					}
-					else
-					{
-						parent->_right = cur->_right;
-						delete cur;
-						return true;
-					}
-				}
-				//右节点为空
-				else if (cur->_right == nullptr)
-				{
-					if (parent->_left == cur)
-					{
-						parent->_left = cur->_left;
-						delete cur;
-						return true;
-					}
-					else
-					{
-						parent->_right = cur->_left;
-						delete cur;
-						return true;
-					}
-				}
-				//左右节点都不为空
-				else
-				{
-				node* right = cur->_right;
-				while (right->_left)
+			else
+				//找到了
 			{
-				right = right->_left;
-			}
-				right->_left = cur->_left;
-				if (parent->_left == cur)
+				//1.左为空
+				//2.右为空
+				//3.左右都不为空
+				if (cur->_left == nullptr)
 				{
-					parent->_left = right;
+					if (cur == _root)//要删的节点为根节点
+					{
+						_root = _root->_right;
+					}
+					else
+					{
+						if (parent->_left == cur)
+						{
+							parent->_left = cur->_right;
+						}
+						else
+						{
+							parent->_right = cur->_right;
+						}
+					}
 					delete cur;
-					return true;
+				}
+				else if(cur->_right==nullptr)
+				{
+					if (cur == _root)//要删的节点为根节点
+					{
+						_root = _root->_left;
+					}
+					else
+					{
+						if (parent->_left == cur)
+						{
+							parent->_left = cur->_left;
+						}
+						else
+						{
+							parent->_right = cur->_left;
+						}
+					}
+					delete cur;
 				}
 				else
+					//两边都不为空
 				{
-					parent->_right = right;
-					delete cur;
-					return true;
+					node* parent = cur;
+					node* right = cur->_right;
+					while (right->_left)
+					{
+						parent = right;
+						right = right->_left;
+					}
+					cur->_key = right->_key;//交换值
+					if (right == parent->_left)//左
+					{
+						parent->_left = right->_right;
+					}
+					else
+					{
+						parent->_right = right->_right;
+					}
+					delete right;
 				}
-				}
+				return true;
 			}
 		}
 		return false;
-		//找到空结点
 	}
+	//bool erase(const T& key)
+	//{
+	//	node* parent = nullptr;
+	//	node* cur = _root;
+	//	if (_root == nullptr)
+	//	{
+	//		return false;
+	//	}
+	//	if (_root->_key == key)//删除根节点时
+	//	{
+	//		//左右空
+	//		if (cur->_left == nullptr && cur->_right == nullptr)
+	//		{
+	//			_root = nullptr;
+	//			return true;
+	//		}
+	//		//左空
+	//		else if (cur->_left == nullptr)
+	//		{
+	//			_root =_root->_right;
+	//			return true;
+	//		}
+	//		//右空
+	//		else if (cur->_right == nullptr)
+	//		{
+	//			_root = _root->_left;
+	//			return true;
+	//		}
+	//		//左右都不空
+	//		else
+	//		{
+	//			node* right = cur->_right;
+	//			while (right->_left)
+	//			{
+	//				right = right->_left;
+	//			}
+	//			right->_left = cur->_left;
+	//			_root = right;
+	//			return true;
+	//		}
+	//	}
+	//	
+	//	while (cur)
+	//	{
+	//		if (key > cur->_key)
+	//		{
+	//			parent = cur;
+	//			cur = cur->_right;
+	//		}
+	//		else if (key < cur->_key)
+	//		{
+	//			parent = cur;
+	//			cur = cur->_left;
+	//		}
+	//		else//找到了
+	//		{//左右节点都为空
+	//			if (cur->_left == nullptr && cur->_right == nullptr)
+	//			{
+	//				if (parent->_left == cur)
+	//				{
+	//					delete cur;
+	//					parent->_left = nullptr;
+	//					return true;
+	//				}
+	//				else
+	//				{
+	//					delete cur;
+	//					parent->_right = nullptr;
+	//					return true;
+	//				}
+	//			}
+
+	//			//左节点为空
+	//			else if (cur->_left == nullptr)
+	//			{
+	//				if (parent->_left == cur)
+	//				{
+	//					parent->_left = cur->_right;
+	//					delete cur;
+	//					return true;
+	//				}
+	//				else
+	//				{
+	//					parent->_right = cur->_right;
+	//					delete cur;
+	//					return true;
+	//				}
+	//			}
+	//			//右节点为空
+	//			else if (cur->_right == nullptr)
+	//			{
+	//				if (parent->_left == cur)
+	//				{
+	//					parent->_left = cur->_left;
+	//					delete cur;
+	//					return true;
+	//				}
+	//				else
+	//				{
+	//					parent->_right = cur->_left;
+	//					delete cur;
+	//					return true;
+	//				}
+	//			}
+	//			//左右节点都不为空
+	//			else
+	//			{
+	//			node* right = cur->_right;
+	//			while (right->_left)
+	//		{
+	//			right = right->_left;
+	//		}
+	//			right->_left = cur->_left;
+	//			if (parent->_left == cur)
+	//			{
+	//				parent->_left = right;
+	//				delete cur;
+	//				return true;
+	//			}
+	//			else
+	//			{
+	//				parent->_right = right;
+	//				delete cur;
+	//				return true;
+	//			}
+	//			}
+	//		}
+	//	}
+	//	return false;
+	//	//找到空结点
+	//}
 	void Inorder()//中序遍历打印---左中右
 	{
 		_Inorder(_root);
@@ -238,16 +324,16 @@ void testbst1()
 		t.insert(e);
 	}
 	t.Inorder();
-	if (t.find(6))
+	if (t.find(1))
 	{
-	bool t1=t.erase(6);
+	bool t1=t.erase(1);
 	cout << t1 << endl;//1
  }
 	t.Inorder();
-	if (t.find(3))
+	if (t.find(6))
 	{
-	bool t2= t.erase(199);
-	cout << t2 << endl;//0
+		bool t1 = t.erase(6);
+		cout << t1 << endl;//1
 	}
 	t.Inorder();
 }
