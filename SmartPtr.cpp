@@ -1,5 +1,8 @@
 #include<iostream>
 #include<vector>
+#include<memory>
+#include<mutex>
+#include<thread>
 using namespace std;
 //template<class T>
 //class smartptr
@@ -383,54 +386,248 @@ using namespace std;
 //	cout << maxProfit(2, prices);
 //	return 0;
 //}
-template<class T>
-class Auto_ptr
+//template<class T>
+//class Auto_ptr
+//{
+//public:
+//	Auto_ptr(T* ptr=nullptr):_ptr(ptr){}
+//	~Auto_ptr() { cout << "delete _ptr" << endl; delete _ptr; }
+//
+//	T* operator->()
+//	{
+//		return _ptr;
+//	}
+//	T& operator*()
+//	{
+//		return *_ptr;
+//	}
+//
+//	Auto_ptr(Auto_ptr<T>& tp)//拷贝构造
+//		:_ptr(tp._ptr)
+//	{
+//			tp._ptr = nullptr;//悬空
+//	}
+//
+//	Auto_ptr& operator=(Auto_ptr<T>& tp)
+//	{
+//		if (this!=&tp)//判断是否是自己赋值給自己
+//		{
+//			if (_ptr)
+//			{
+//				delete _ptr;
+//				_ptr = nullptr;
+//			}
+//			_ptr = tp._ptr;//转移资源管理权
+//			tp._ptr = nullptr;//悬空
+//		}
+//		return *this;
+//	}
+//private:
+//	T* _ptr;
+//
+//};
+//
+//int main()
+//{
+//	Auto_ptr<int> apt1(new int(1));
+//	*apt1 = 10;
+//	Auto_ptr<int> apt2(apt1);
+//
+//	Auto_ptr<int> apt3(new int(3));
+//	apt3 = apt2;
+//	return 0;
+//}
+
+//template<class T>
+//class Unique_ptr
+//{
+//public:
+//	Unique_ptr(T* ptr):_ptr(ptr){}
+//	~Unique_ptr()
+//	{
+//		if (_ptr)
+//		{
+//			cout << "delete _ptr" << endl;
+//			delete _ptr;
+//		}
+//		
+//	}
+//
+//	T& operator*()
+//	{
+//		return *_ptr;
+//	}
+//
+//	T* operator->()
+//	{
+//		return _ptr;
+//	}
+//
+//	Unique_ptr<T>& operator=(const Unique_ptr<T>& upt) = delete;//禁用拷贝构造
+//	Unique_ptr(const Unique_ptr<T>& upt) = delete;//禁用拷贝赋值
+//private:
+//	T* _ptr;
+//};
+//
+//int main()
+//{
+//	Unique_ptr<int> upt1(new int(1));
+//	cout << *(upt1) << endl;
+//
+//	Unique_ptr<int> upt2(upt1);
+//	Unique_ptr<int> upt3(new int(3));
+//	upt3 = upt1;
+//	return 0;
+//}
+//using namespace std;
+//namespace s
+//{
+//	template<class T>
+//	class Share_ptr
+//	{
+//	public:
+//		Share_ptr(T* ptr = nullptr) :_ptr(ptr), _pcount(new int(1)), _mut(new mutex) {}
+//
+//		Share_ptr<T>& operator=(const Share_ptr<T>& spt)//赋值重载
+//		{
+//			if (_ptr!=spt._ptr)
+//			{
+//				Release();
+//				_ptr = spt._ptr;
+//				_pcount = spt._pcount;
+//				_mut = spt._mut;
+//				Addpcount();
+//			}
+//			return *this;
+//		}
+//
+//		int use_count()
+//		{
+//			return *_pcount;
+//		}
+//		void Addpcount()
+//		{
+//			_mut->lock();
+//			(*_pcount)++;
+//			_mut->unlock();
+//		}
+//		Share_ptr(const Share_ptr<T>& spt)//拷贝构造
+//			:_ptr(spt._ptr)
+//			, _pcount(spt._pcount)
+//			,_mut(spt._mut)
+//		{
+//			Addpcount();
+//		}
+//		void Release()
+//		{
+//			_mut->lock();//加锁
+//			bool flag = false;
+//			if (--(*_pcount) == 0 && _ptr)
+//			{
+//				//计数为0，释放资源
+//				cout << "delete _ptr" << endl;
+//				delete _ptr;
+//				delete _pcount;
+//				flag = true;
+//			}
+//			_mut->unlock();//解锁
+//			if (flag)
+//			{
+//				cout << "delete mutex" << endl;
+//				delete _mut;
+//			}
+//
+//		}
+//		~Share_ptr()
+//		{
+//			Release();
+//		}
+//
+//		T* operator->()
+//		{
+//			return &_ptr;
+//		}
+//
+//		T* get() const
+//		{
+//			return _ptr;
+//		}
+//
+//		T& operator*()
+//		{
+//			return *_ptr;
+//		}
+//	private:
+//		T* _ptr;
+//		int* _pcount;
+//		mutex* _mut;
+//
+//	};
+//}
+
+//int main()
+//{
+//	s::Share_ptr<int> spt1(new int(1));
+//	cout << "spt1 pcount: " << spt1.use_count() << endl;
+//	s::Share_ptr<int> spt2(spt1);
+//	cout << "spt2 pcount: " << spt2.use_count() << endl;
+//
+//	s::Share_ptr<int> spt3(new int(3));
+//	spt3 = spt1;
+//	cout << "spt3 pcount: " << spt3.use_count() << endl;
+//
+//	return 0;
+//}
+
+void func(std::shared_ptr<int>& sp, size_t n)
 {
-public:
-	Auto_ptr(T* ptr=nullptr):_ptr(ptr){}
-	~Auto_ptr() { cout << "delete _ptr" << endl; delete _ptr; }
-
-	T* operator->()
+	for (size_t i = 0; i < n; i++)
 	{
-		return _ptr;
+		std::shared_ptr<int> sp2(sp);
 	}
-	T& operator*()
-	{
-		return *_ptr;
-	}
-
-	Auto_ptr(Auto_ptr<T>& tp)//拷贝构造
-		:_ptr(tp._ptr)
-	{
-			tp._ptr = nullptr;//悬空
-	}
-
-	Auto_ptr& operator=(Auto_ptr<T>& tp)
-	{
-		if (this!=&tp)//判断是否是自己赋值給自己
-		{
-			if (_ptr)
-			{
-				delete _ptr;
-				_ptr = nullptr;
-			}
-			_ptr = tp._ptr;//转移资源管理权
-			tp._ptr = nullptr;//悬空
-		}
-		return *this;
-	}
-private:
-	T* _ptr;
-
-};
-
+}
 int main()
 {
-	Auto_ptr<int> apt1(new int(1));
-	*apt1 = 10;
-	Auto_ptr<int> apt2(apt1);
+	//s::Share_ptr<int> sp1(new int(0));
+	std::shared_ptr<int> sp1(new int(1));
+	const size_t n = 1000000;
+	thread t1(func,std::ref(sp1), n);
+	thread t2(func,std::ref(sp1), n);
 
-	Auto_ptr<int> apt3(new int(3));
-	apt3 = apt2;
+	t1.join();
+	t2.join();
+
+	cout << sp1.use_count() << endl; //预期：1
+
 	return 0;
 }
+//struct Date
+//{
+//public:
+//	int _year = 0;
+//	int _month = 0;
+//	int _day = 0;
+//};
+//void SharePtrFunc(s::Share_ptr<Date>& sp, size_t n, mutex& mtx)
+//{
+//	cout << sp.get() << endl;
+//	for (size_t i = 0; i < n; ++i)
+//	{
+//		// 这里智能指针拷贝会++计数，智能指针析构会--计数，这里是线程安全的。
+//		s::Share_ptr<Date> copy(sp);
+//		{
+//		unique_lock<mutex> lk(mtx);
+//		copy->_year++;
+//		copy->_month++;
+//		copy->_day++;
+//		}
+//	}
+//}
+//int main()
+//{
+//	std::shared_ptr<Date> spt(new Date());
+//	cout << spt.get() << endl;//打印指针
+//
+//
+//	return 0;
+//}
