@@ -1,8 +1,11 @@
+#define _CRT_SECURE_NO_WARNINGS 1
 #include<iostream>
 #include<vector>
 #include<memory>
 #include<mutex>
 #include<thread>
+#include<stdio.h>
+#include<functional>
 using namespace std;
 //template<class T>
 //class smartptr
@@ -579,35 +582,208 @@ using namespace std;
 //	return 0;
 //}
 
-void func(std::shared_ptr<int>& sp, size_t n)
+
+namespace s
 {
-	for (size_t i = 0; i < n; i++)
+	template<class T>
+	class default_delete
 	{
-		std::shared_ptr<int> sp2(sp);
-	}
+	public:
+		void operator()(T* ptr)
+		{
+			cout << "delete ptr" << endl;
+			delete ptr;
+		}
+	};
+
+
+	template<class T>
+	class Delarry
+	{
+	public:
+		void operator()( T* arr)
+		{
+			cout << "delete[]" << arr << endl;
+			delete[]arr;
+		}
+	};
+
+	template<class T,class D=default_delete<T>>
+	class Share_ptr
+	{
+	public:
+		Share_ptr(T* ptr ,D del) :_ptr(ptr), _pcount(new int(1)),_mut(new mutex),_del(del) {}
+
+		Share_ptr<T>& operator=(const Share_ptr<T>& spt)//赋值重载
+		{
+			if (_ptr != spt._ptr)
+			{
+				Release();
+				_ptr = spt._ptr;
+				_pcount = spt._pcount;
+				_mut = spt._mut;
+				Addpcount();
+			}
+			return *this;
+		}
+
+		int use_count()
+		{
+			return *_pcount;
+		}
+		void Addpcount()
+		{
+			_mut->lock();
+			(*_pcount)++;
+			_mut->unlock();
+		}
+		Share_ptr(const Share_ptr<T>& spt)//拷贝构造
+			:_ptr(spt._ptr)
+			, _pcount(spt._pcount)
+			,_mut(spt._mut)
+		{
+			Addpcount();
+		}
+		void Release()
+		{
+			bool flag = false;
+			_mut->lock();
+			if (--(*_pcount) == 0 && _ptr)
+			{
+				//计数为0，释放资源
+				cout << "delete _ptr" << endl;
+				_del( _ptr);//调用对应制定删除器释放资源
+				delete _pcount;
+				flag = true;
+			}
+			_mut->unlock();
+			if (flag == true)
+			{
+				delete _mut;
+			}
+		}
+		~Share_ptr()
+		{
+			Release();
+		}
+
+		T* operator->()
+		{
+			return _ptr;
+		}
+
+		T* get()
+		{
+			return _ptr;
+		}
+
+		T& operator*()
+		{
+			return *_ptr;
+		}
+	private:
+		T* _ptr;
+		int* _pcount;
+		mutex* _mut;
+		D _del;
+	};
 }
-int main()
-{
-	//s::Share_ptr<int> sp1(new int(0));
-	std::shared_ptr<int> sp1(new int(1));
-	const size_t n = 1000000;
-	thread t1(func,std::ref(sp1), n);
-	thread t2(func,std::ref(sp1), n);
 
-	t1.join();
-	t2.join();
-
-	cout << sp1.use_count() << endl; //预期：1
-
-	return 0;
-}
-//struct Date
+//int main()
 //{
-//public:
-//	int _year = 0;
-//	int _month = 0;
-//	int _day = 0;
-//};
+//	s::Share_ptr<int> spt1(new int(1));
+//	cout << "spt1 pcount: " << spt1.use_count() << endl;
+//	s::Share_ptr<int> spt2(spt1);
+//	cout << "spt2 pcount: " << spt2.use_count() << endl;
+//
+//	s::Share_ptr<int> spt3(new int(3));
+//	spt3 = spt1;
+//	cout << "spt3 pcount: " << spt3.use_count() << endl;
+//
+//	return 0;
+//}
+
+
+struct Date
+{
+public:
+	int _year = 0;
+	int _month = 0;
+	int _day = 0;
+};
+
+//void func(std::shared_ptr<int>& sp, size_t n)
+//{
+//	for (size_t i = 0; i < n; i++)
+//	{
+//		std::shared_ptr<int> sp2(sp);
+//	}
+//}
+//
+//void test_shared_ptr1()
+//{
+//	int n = 50000;
+//	mutex mtx;
+//	s::Share_ptr<Date> sp1(new Date());
+//
+//	thread t1([&]()
+//		{
+//			for (int i = 0; i < n; ++i)
+//			{
+//				s::Share_ptr<Date> sp2(sp1);
+//		//		mtx.lock();
+//				sp2->_year++;
+//				sp2->_day++;
+//				sp2->_month++;
+//		//		mtx.unlock();
+//			}
+//		});
+//
+//	thread t2([&]()
+//		{
+//			for (int i = 0; i < n; ++i)
+//			{
+//				s::Share_ptr<Date> sp3(sp1);
+//			//	mtx.lock();
+//				sp3->_year++;
+//				sp3->_day++;
+//				sp3->_month++;
+//			//	mtx.unlock();
+//			}
+//		});
+//
+//	t1.join();
+//	t2.join();
+//
+//	cout << sp1.use_count() << endl;
+//	cout << sp1.get() << endl;
+//
+//	cout <<"sp1->_year: " << sp1->_year << endl;
+//	cout <<"sp1->_month: " << sp1->_month << endl;
+//	cout <<"sp1->_year: " << sp1->_day << endl;
+//}
+//
+//int main()
+//{
+//	test_shared_ptr1();
+//}
+
+//int main()
+//{
+//	//s::Share_ptr<int> sp1(new int(0));
+//	std::shared_ptr<int> sp1(new int(1));
+//	const size_t n = 1000000;
+//	thread t1(func,std::ref(sp1), n);
+//	thread t2(func,std::ref(sp1), n);
+//
+//	t1.join();
+//	t2.join();
+//
+//	cout << sp1.use_count() << endl; //预期：1
+//
+//	return 0;
+//}
+
 //void SharePtrFunc(s::Share_ptr<Date>& sp, size_t n, mutex& mtx)
 //{
 //	cout << sp.get() << endl;
@@ -629,5 +805,80 @@ int main()
 //	cout << spt.get() << endl;//打印指针
 //
 //
+//	return 0;
+//}
+
+
+namespace t
+{template<class T>
+class weak_ptr
+{
+public:
+
+	weak_ptr() :_ptr(nullptr) {}
+
+
+
+	weak_ptr<T>& operator=( s::Share_ptr<T>& spt)//赋值重载
+	{
+		_ptr = spt.get();
+		return *this;
+	}
+
+	weak_ptr(const s::Share_ptr<T>& spt)//拷贝构造
+		:_ptr(spt.get())
+	{}
+
+	T* operator->()
+	{
+		return _ptr;
+	}
+
+	T& operator*()
+	{
+		return *_ptr;
+	}
+
+private:
+	T* _ptr;
+};
+}
+
+class Fclose
+{
+public:
+	void operator()(FILE* ptr)
+	{
+		cout << "fclose ptr" << endl;
+		fclose(ptr);
+	}
+};
+
+int main()
+{
+	s::Share_ptr<int,s::Delarry<int>> sp(new int[10],s::Delarry<int>());
+	s::Share_ptr<FILE, function<void(FILE*)>> sp2(fopen("test.cpp", "r"), [](FILE* ptr) {
+		cout << "fclose: " << ptr << endl;
+		fclose(ptr); });
+	return 0;
+}
+
+//struct ListNode
+//{
+//	int _data = 0;
+//	t::weak_ptr<ListNode> _prev;
+//	t::weak_ptr<ListNode> _next;
+//	~ListNode() { cout << "~ListNode()" << endl; }
+//};
+//int main()
+//{
+//	s::Share_ptr<ListNode> node1(new ListNode);
+//	s::Share_ptr<ListNode> node2(new ListNode);
+//	cout << " node1.use_count: " << node1.use_count() << endl;
+//	cout << " node2.use_count: " << node2.use_count() << endl;
+//	node1->_next = node2;
+//	node2->_prev = node1;
+//	cout << " node1.use_count: " << node1.use_count() << endl;
+//	cout << " node2.use_count: " << node2.use_count() << endl;
 //	return 0;
 //}
