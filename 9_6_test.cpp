@@ -2,6 +2,7 @@
 #include<iostream>
 #include<map>
 #include<string.h>
+#include<mutex>
 using namespace std;
 
 //只能在堆上创建对象
@@ -133,6 +134,7 @@ using namespace std;
 //单例模式的类：全局只有一个
 //饿汉模式
 //对象在main函数之前就创建好了
+//缺点：可能导致项目启动速度慢，若创建的1对象之间有关联性，由于是在main函数之前启动，该创建顺序无法被我们控制，因此其启动顺序由OS决定，那么会导致出错启动不起来
 
 //class SingalInfo
 //{
@@ -180,53 +182,135 @@ using namespace std;
 //	return 0;
 //}
 //懒汉模式
-class SingalInfo
-{
-public:
-	static SingalInfo& getbody()
-	{
-		if (_sig == nullptr)//第一次进来时指针为空，就创建新对象，否则直接返回此对象
-		{
-			_sig = new SingalInfo();
-		
-		}
-		return *_sig;
-	}
-	void Insert(const string& name, int salary)
-	{
-		_info[name] = salary;
-	}
-	void Print()
-	{
-		for (auto& kv : _info)
-		{
-			cout << kv.first << " : " << kv.second << endl;
-		}
-		cout << endl;
-	}
-private:
-	SingalInfo() {};//构造函数私有化
-	SingalInfo(SingalInfo& sig) = delete;//禁用拷贝构造
-	SingalInfo& operator=(SingalInfo& sig) = delete;//禁用拷贝赋值
-private:
-	static	SingalInfo* _sig;//类内声明---整个类只有一个对象
-	map<string, int> _info;
+//对象在main函数之后创建，其创建顺序可以由我们制定
+//template<class lock>
+//class LockGuard
+//{
+//public:
+//	LockGuard(lock& lk) :_lk(lk)
+//	{
+//		_lk.lock();
+//	}
+//
+//	~LockGuard()
+//	{
+//		_lk.unlock();
+//	}
+//		lock& _lk;
+//};
+//
+//class SingalInfo
+//{
+//public:
+//
+//	static SingalInfo& GetInstance()
+//	{
+//		static SingalInfo instance;//静态的局部变量是在main函数之后创建的
+//		//C++11之后能够保证创建静态对象是线程安全的
+//		return instance;
+//	}
+//
+////	static SingalInfo& getbody()
+////	{//当多个线程进来时，会new多个对象，因此需要加锁保护
+////		if (_sig == nullptr)//第一次进来时指针为空，就创建新对象，否则直接返回此对象
+////		{
+////			LockGuard<mutex> lg(_mut);
+////		//	_mut.lock();//双重检查：第一次进来且只有一个线程能够new对象
+////			if (_sig == nullptr)
+////			{
+////				_sig = new SingalInfo();
+////			}
+////		//	_mut.unlock();//这样出现new对象失败抛异常导致解锁失败
+////		}
+////		return *_sig;
+////	}
+////
+////	static void DeleteInstance()
+////	{
+////		//...保存数据
+////
+////		LockGuard<mutex> lg(_mut);
+////		if (_sig)
+////		{
+////			cout << "~ _sig" << endl;
+////			delete _sig;
+////			_sig = nullptr;
+////		}
+////	}
+////
+////	class GC//内部类相当于友元，直接拿外类的成员
+////	{
+////	public:
+////		~GC()
+//////定义一个内部类，可以在main函数随处位置调用释放外部类，或者当外部类的声明周期结束时自动调用该内部类的析构函数释放外部类。而不是让创建当前外部类的父进程回收外部类
+////		{
+////			
+////			DeleteInstance();
+////		}
+////	};
+//
+//	void Insert(const string& name, int salary)
+//	{
+//		_info[name] = salary;
+//	}
+//	void Print()
+//	{
+//		for (auto& kv : _info)
+//		{
+//			cout << kv.first << " : " << kv.second << endl;
+//		}
+//		cout << endl;
+//	}
+//private:
+//	SingalInfo() { cout << "touch SingalInfo" << endl; };//构造函数私有化
+//	SingalInfo(SingalInfo& sig) = delete;//禁用拷贝构造
+//	SingalInfo& operator=(SingalInfo& sig) = delete;//禁用拷贝赋值
+//private:
+//	static	SingalInfo* _sig;//类内声明---整个类只有一个对象
+//	map<string, int> _info;
+////	static mutex _mut;
+////	static GC _gc;//内部类声明
+//
+//};
+//SingalInfo* SingalInfo::_sig=nullptr;//类外定义对象，全局定义具有全局属性，声明周期是全局
+////mutex SingalInfo::_mut;
+////SingalInfo::GC SingalInfo::_gc;
+////int main()
+////{
+////	SingalInfo& kk = SingalInfo::getbody();
+////	kk.Insert("me", 10000);
+////	kk.Insert("you", 20000);
+////	kk.Insert("who", 30000);
+////
+////	kk.Print();
+////
+////	SingalInfo::getbody().Insert("she", 25000);
+////	SingalInfo::getbody().Print();
+////
+////	kk.Print();//此时kk对象打印的内容和前面的匿名对象打印的内容是一样的表示全局内对象只有一份
+////	//SingalInfo::DeleteInstance();
+////	return 0;
+////}
+//
+//int main()
+//{
+//		SingalInfo& kk = SingalInfo::GetInstance();
+//	kk.Insert("me", 10000);
+//	kk.Insert("you", 20000);
+//	kk.Insert("who", 30000);
+//
+//	kk.Print();
+//
+//	SingalInfo::GetInstance().Insert("she", 25000);
+//	SingalInfo::GetInstance().Print();
+//
+//	kk.Print();//此时kk对象打印的内容和前面的匿名对象打印的内容是一样的表示全局内对象只有一份
+//	return 0;
+//}
 
-};
-SingalInfo* SingalInfo::_sig=nullptr;//类外定义对象，全局定义具有全局属性，声明周期是全局
-
+//const 属性的变量存在与栈帧，属于常变量
 int main()
 {
-	SingalInfo& kk = SingalInfo::getbody();
-	kk.Insert("me", 10000);
-	kk.Insert("you", 20000);
-	kk.Insert("who", 30000);
 
-	kk.Print();
-
-	SingalInfo::getbody().Insert("she", 25000);
-	SingalInfo::getbody().Print();
-
-	kk.Print();//此时kk对象打印的内容和前面的匿名对象打印的内容是一样的表示全局内对象只有一份
 	return 0;
 }
