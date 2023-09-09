@@ -15,6 +15,8 @@ using namespace std;
 //	{
 //		return new HeapOnly();
 //	}
+//
+//	~HeapOnly() { cout << "~HeapOnly" << endl; }
 //private:
 //	HeapOnly() {};//禁用构造函数，防止外部调用构造函数在栈上创建对象
 //	HeapOnly(const HeapOnly& hp) = delete;//防拷贝
@@ -24,6 +26,9 @@ using namespace std;
 //{
 //	//HeapOnly* hps = new HeapOnly();//这样走需要调用构造函数，然而构造函数不能被调用
 //	HeapOnly* hps = HeapOnly::Createobj();
+//
+//	HeapOnly* hp2 = HeapOnly::Createobj();
+//	
 //}
 
 //只在栈上创建的对象
@@ -42,7 +47,7 @@ using namespace std;
 //	~StackOnly() { cout << "~StackOnly()" << endl; }
 //	void* operator new(size_t s) =delete;
 //	void operator delete(void* p)=delete;
-//	//把new和delete禁掉，不能通过new在堆上创建对象，但还是能通过static修饰在静态区上创建对象
+//	把new和delete禁掉，不能通过new在堆上创建对象，但还是能通过static修饰在静态区上创建对象
 //private:
 //	StackOnly() {};//构造函数私有。外部通过new对象也需要走构造函数
 //	StackOnly(const StackOnly& st) = delete;//防拷贝
@@ -51,10 +56,10 @@ using namespace std;
 //};
 //int main()
 //{
-//	//StackOnly* st = new StackOnly();//构造函数私有化，不能通过new创建对象即不能在堆上创建对象
-//	//static StackOnly st = StackOnly::CreateObj();//????
-// //StackOnly st= StackOnly::CreateObj();
-//	//static StackOnly sp1;//要走构造函数
+//	StackOnly* st = new StackOnly();//构造函数私有化，不能通过new创建对象即不能在堆上创建对象
+//	static StackOnly st = StackOnly::CreateObj();//????
+// StackOnly st= StackOnly::CreateObj();
+//	static StackOnly sp1;//要走构造函数
 //	StackOnly::CreateObj().Print();
 //	const StackOnly& so4 = StackOnly::CreateObj();
 //	so4.Print();
@@ -68,9 +73,9 @@ using namespace std;
 //{
 //public:
 //
-//	Father() { cout << "get Father" << endl; };
+//	
 //private:
-//
+//	Father() { cout << "get Father" << endl; };
 //};
 //
 //class Son :public Father
@@ -165,7 +170,7 @@ using namespace std;
 //
 //};
 //SingalInfo SingalInfo::_sig;//类外定义对象，全局定义具有全局属性，声明周期是全局
-
+//
 //int main()
 //{
 //	SingalInfo& kk = SingalInfo::getbody();
@@ -198,7 +203,7 @@ using namespace std;
 //	}
 //		lock& _lk;
 //};
-//
+
 //class SingalInfo
 //{
 //public:
@@ -209,46 +214,46 @@ using namespace std;
 //		//C++11之后能够保证创建静态对象是线程安全的
 //		return instance;
 //	}
+//   
+//	static SingalInfo& getbody()
+//	{//当多个线程进来时，会new多个对象，因此需要加锁保护
+//		if (_sig == nullptr)//第一次进来时指针为空，就创建新对象，否则直接返回此对象
+//		{
+//			LockGuard<mutex> lg(_mut);
+//		//	_mut.lock();//双重检查：第一次进来且只有一个线程能够new对象
+//			if (_sig == nullptr)
+//			{
+//				_sig = new SingalInfo();
+//			}
+//		//	_mut.unlock();//这样出现new对象失败抛异常导致解锁失败
+//		}
+//		return *_sig;
+//	}
+////
+//	static void DeleteInstance()
+//	{
+//		//...保存数据
 //
-////	static SingalInfo& getbody()
-////	{//当多个线程进来时，会new多个对象，因此需要加锁保护
-////		if (_sig == nullptr)//第一次进来时指针为空，就创建新对象，否则直接返回此对象
-////		{
-////			LockGuard<mutex> lg(_mut);
-////		//	_mut.lock();//双重检查：第一次进来且只有一个线程能够new对象
-////			if (_sig == nullptr)
-////			{
-////				_sig = new SingalInfo();
-////			}
-////		//	_mut.unlock();//这样出现new对象失败抛异常导致解锁失败
-////		}
-////		return *_sig;
-////	}
+//		LockGuard<mutex> lg(_mut);
+//		if (_sig)
+//		{
+//			cout << "~ _sig" << endl;
+//			delete _sig;
+//			_sig = nullptr;
+//		}
+//	}
 ////
-////	static void DeleteInstance()
-////	{
-////		//...保存数据
-////
-////		LockGuard<mutex> lg(_mut);
-////		if (_sig)
-////		{
-////			cout << "~ _sig" << endl;
-////			delete _sig;
-////			_sig = nullptr;
-////		}
-////	}
-////
-////	class GC//内部类相当于友元，直接拿外类的成员
-////	{
-////	public:
-////		~GC()
-//////定义一个内部类，可以在main函数随处位置调用释放外部类，或者当外部类的声明周期结束时自动调用该内部类的析构函数释放外部类。而不是让创建当前外部类的父进程回收外部类
-////		{
-////			
-////			DeleteInstance();
-////		}
-////	};
-//
+//	class GC//内部类相当于友元，直接拿外类的成员
+//	{
+//	public:
+//		~GC()
+////定义一个内部类，可以在main函数随处位置调用释放外部类，或者当外部类的声明周期结束时自动调用该内部类的析构函数释放外部类。而不是让创建当前外部类的父进程回收外部类
+//		{
+//			
+//			DeleteInstance();
+//		}
+//	};
+
 //	void Insert(const string& name, int salary)
 //	{
 //		_info[name] = salary;
@@ -266,13 +271,13 @@ using namespace std;
 //	SingalInfo(SingalInfo& sig) = delete;//禁用拷贝构造
 //	SingalInfo& operator=(SingalInfo& sig) = delete;//禁用拷贝赋值
 //private:
-//	static	SingalInfo* _sig;//类内声明---整个类只有一个对象
+//	//static	SingalInfo* _sig;//类内声明---整个类只有一个对象
 //	map<string, int> _info;
-////	static mutex _mut;
-////	static GC _gc;//内部类声明
+//	//static mutex _mut;
+//	//static GC _gc;//内部类声明
 //
 //};
-//SingalInfo* SingalInfo::_sig=nullptr;//类外定义对象，全局定义具有全局属性，声明周期是全局
+////SingalInfo* SingalInfo::_sig=nullptr;//类外定义对象，全局定义具有全局属性，声明周期是全局
 ////mutex SingalInfo::_mut;
 ////SingalInfo::GC SingalInfo::_gc;
 ////int main()
@@ -291,7 +296,7 @@ using namespace std;
 ////	//SingalInfo::DeleteInstance();
 ////	return 0;
 ////}
-//
+////
 //int main()
 //{
 //		SingalInfo& kk = SingalInfo::GetInstance();
@@ -311,6 +316,93 @@ using namespace std;
 //const 属性的变量存在与栈帧，属于常变量
 int main()
 {
+	
+	volatile const int b = 3;//用volatile修饰，表示该变量保持内存可见性
+	int* pp = const_cast<int*>(&b);
+//打印时是b=3，*pp=5，其原因在于系统默认const变量不会被改变，因此对const变量进行优化，
+//将const变量放入寄存器中，之后要用到都去寄存器里面取,因此在内存中改变后不会更新到寄存器中，这样const变量取到的就是改变之前的值
+//而在监视窗口看到b和*pp都变成了5，其原因在于监视窗口是在内存中取的数据，因此b取到的是更新后的数据
+	*pp = 5;
+	cout << "const int b: " << b << endl;//3
+	cout << " *pp: " << *pp << endl;//5
 
 	return 0;
 }
+
+//class A
+//{
+//public:
+//	virtual void fun(){}
+//
+//	int _a = 10;
+//};
+//
+//class B : public A
+//{
+//public:
+//	int _b = 20;
+//};
+//
+//void func(A* ap)
+//{
+//	//B* pb1 = static_cast<B*>(ap);//转子类
+//	B* pb1 = dynamic_cast<B*>(ap);//转子类
+//	A* pb2 = static_cast<A*>(ap);//转父类
+//	
+//	cout << "pb1: " << pb1 << endl;
+////使用dynamic_cast后，父类转子类是要被检查的，若转换失败则返回空給指针，后续调用该指针会直接中断程序
+//	pb1->_a = 40;//这里父类转子类，理应子类指针不能拿到父类的成员变量,因此这种转换是不安全的
+//	pb1->_b = 50;
+//	cout << "pb1->_a: " << pb1->_a << " pb1->_b: " << pb1->_b << endl;
+//	cout << "pb2: " << pb2 << endl;
+//
+//	pb2->_a = 100;
+//}
+//
+//
+//int main()
+//{
+//	A a;
+//	B b;
+//	func(&a);//传父类指针过去转换
+//	func(&b);//传子类指针过去转换
+//	return 0;
+//}
+
+//本文介绍了C++特殊类设计，设计一个类不能被拷贝，设计一个类只能在堆上创建、只能在栈上创建，设计一个类不能被继承。单例模式的概念，和常见的饿汉模式和懒汉模式原理及其实现
+
+
+//void test1()
+//{
+//	int a = 10;
+//	double b = a;//隐式类型转换
+//	cout << "int a= " << a << " double b= " << b << endl;
+//
+//	int* p = &a;
+//	int c = (int)p;//显示的强制类型转换
+//
+//	cout << "p= " << p << " int c= " << c << endl;
+//}
+//
+//void test1()
+//{
+//	double a = 3.1415926;
+//	int b = static_cast<int>(a);//
+//	cout << "double a= " << a << " int b= " << b << endl;
+//}
+
+//void test1()
+//{
+//	int a = 111;
+//
+////	int* p = static_cast<int*>(a);//这里会报错：类型转换无效
+//	int* p = reinterpret_cast<int*>(a);//这里会报错：类型转换无效
+//
+//	cout << "int a= " << a << " int*p= " << p << endl;
+//}
+//
+//int main()
+//{
+//	test1();
+//	return 0;
+//}
