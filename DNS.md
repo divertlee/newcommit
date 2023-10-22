@@ -119,7 +119,72 @@ ICMP协议的主要功能包含：
 
 举个例子
 
+![image-20231022164639829](https://non1.oss-cn-guangzhou.aliyuncs.com/write1/202310221646933.png)
+
+* 主机A想要跨网络发送数据给主机B，首先主机A会将数据包发送给路由器1，由路由器1转发。
+* 路由器1将数据包转发给主机B的入口路由器，即路由器2，此时路由器2知道主机B的IP地址，但是不知道主机B的mac地址，因此发送arp请求给主机B，请求主机B的mac地址。
+* 由于主机B掉线了，无法回答路由器2arp响应，经过多次的arp请求后，路由器2返回一个Destination Unreachable给主机A，通知主机A该IP数据包没有成功到达主机B。
+
+### ICMP的报文格式
+
+![image-20231022165419559](https://non1.oss-cn-guangzhou.aliyuncs.com/write1/202310221654500.png)
+
+> ICMP大概分为两种报文：
+>
+> * 一类是用于通知出错原因
+> * 一类是用于诊断查询
+
+ICMP包常见类型如下：
+
+| 类型 | 内容                                  |
+| ---- | ------------------------------------- |
+| 0    | 回送应答（Echo Reply）                |
+| 3    | 目标不可达（Destination Unreachable） |
+| 4    | 原点抑制（Source Quench）             |
+| 5    | 重定向或改变路由（Redirect）          |
+| 8    | 回送请求（Echo Request）              |
+| 9    | 路由器公告（Router Advertisement）    |
+| 10   | 路由器请求（Router Solicitation）     |
+| 11   | 超时（Time Exceeded）                 |
+| 17   | 地址子网请求（Address Mask Request）  |
+| 18   | 地址子网应答（Address Mask Reply）    |
+
+#### ping命令
+
+ping命令是一个基于ICMP协议的TCP/IP工具。它的主要功能为：
+
+1. 用来检测网络的连通情况和测试网络速度。
+2. 根据域名得到相应主机的IP地址。
+3. 根据ping返回的TTL（IP包中的Time To Live, 生存周期）值来判断对方所使用的操作系统及数据包经过路由器数量。
+
+因为具备了以上功能，ping命令常常被黑客用来做网络扫描和主机攻击。
+
+![image-20231022172029606](https://non1.oss-cn-guangzhou.aliyuncs.com/write1/202310221720448.png)
+
+现通过ping命令对百度的网站进行检测。会对域名`www.baidu.com`解析成IP地址`157.148.69.74`。
+
+* ping命令会先发送一个ICMP Echo Request给对端。
+* 对端接收到之后，会返回一个ICMP Echo Reply。
+
+![image-20231022172433549](https://non1.oss-cn-guangzhou.aliyuncs.com/write1/202310221724667.png)
+
+> telnet对应的端口号是23，ssh对应的端口号是22，那ping对应的端口号是多少？
+
+ping命令基于ICMP，是在网络层，而端口号是传输层的内容，传输层在网络层之上，因此在ICMP中根本就不关注端口号这样的信息。
+
+#### traceroute命令
+
+traceroute命令也是基于ICMP协议实现的，利用ICMP协议定位主机和目标主机之间的所有路由器。
+
+![image-20231022182215355](https://non1.oss-cn-guangzhou.aliyuncs.com/write1/202310221822135.png)
+
+* tracetoute命令通过控制数据包的TTL来获取到路径上的路由器信息。
+* 每当数据包经过一个路由器，其TTL值就会减1，当TTL值减为0时对应路由设备就会将该数据包丢弃，并传送一个`Destination Unreachable` ICMP TTL数据包返回给主机。
+* tracetoute命令底层修改TTL，多次发送数据包，就能够拿到路径上路由器信息。
+
 # NAT
+
+
 
 NAT路由器不仅要完成lan口IP转化为wan口IP，还要为了标明子网内主机的唯一性，适当转换报文的端口号
 
